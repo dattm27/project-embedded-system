@@ -6,6 +6,8 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
+#include "DisplayDateTime.h"
+#include "DisplayTemperatureHumidity.h"
 
 #define TFT_CS   5
 #define TFT_DC   16
@@ -23,13 +25,9 @@ DHT dht(DHT_PIN, DHTTYPE);
 
 RTC_DS1307 rtc;
 
-DateTime lastDateTime;
-float lastTemp = 0;
-float lastHumidity = 0;
-
 // Đặt thông tin WiFi của bạn
-const char *ssid     = "THANG_2G";
-const char *password = "0967240219";
+const char *ssid     = "La Thuy";
+const char *password = "hoilamchi";
 
 // Đặt múi giờ cho Hà Nội (GMT+7)
 const long utcOffsetInSeconds = 7 * 3600;
@@ -40,13 +38,39 @@ WiFiUDP ntpUDP;
 // Khởi tạo NTPClient
 NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
 
+//// Khởi tạo đối tượng DisplayDateTime
+DisplayDateTime displayDateTime(tft, rtc);
+
+
+// Khởi tạo đối tượng DisplayTemperatureHumidity
+DisplayTemperatureHumidity displayTempHumidity(tft, dht);
+
+
+unsigned long lastDateTimeUpdate = 0;
+unsigned long lastTempHumidityUpdate = 0;
+const unsigned long switchInterval = 10000; // Chuyển đổi màn hình mỗi 10 giây
+const unsigned long dateTimeUpdateInterval = 30000; // Cập nhật thời gian mỗi 30 giây
+const unsigned long tempHumidityUpdateInterval = 60000; // Cập nhật nhiệt độ và độ ẩm mỗi 60 giây
+ int mode = 0; // chế độ hiển thị
+ int recent_mode = -1; // chế độ hiển thị hiện tại
+#define BUTTON_PIN 12
+//Chống nhảy phím
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceDelay = 200;
+
+
 void setup() {
   Serial.begin(115200);
   Serial.println("ILI9341 Test!"); 
 
   tft.begin();
+
   pinMode(TFT_LED, OUTPUT);
   backlighting(true);
+
+  
+  // Thiết lập chân nút bấm
+  pinMode(BUTTON_PIN, INPUT);
   
   if (!rtc.begin()) {
     Serial.println("Couldn't find RTC");
@@ -58,43 +82,89 @@ void setup() {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 
+  tft.setRotation(0); // Landscape orientation
+
   dht.begin();
-  tft.setRotation(1); // Landscape orientation
+  tft.fillScreen(ILI9341_BLACK);
 
   // Kết nối WiFi
   WiFi.begin(ssid, password);
+  tft.setCursor(20, 100);
+  tft.setTextSize(2);
+  tft.println("Connecting to WiFi...");
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
+    
   }
+  tft.fillScreen(ILI9341_BLACK);
+  tft.setCursor(20, 100);
+  tft.setTextColor(ILI9341_GREEN);
+  tft.println("Connected to WiFi...");
+  
+  tft.fillScreen(ILI9341_BLACK);
   Serial.println("Connected to WiFi");
+  delay(5000);
 
   // Khởi động NTPClient
   timeClient.begin();
-}
 
-void loop(void) {
-  // Cập nhật thời gian từ NTP mỗi giờ
+
+  // Cập nhật thời gian từ NTP
   if (WiFi.status() == WL_CONNECTED) {
     timeClient.update();
     unsigned long epochTime = timeClient.getEpochTime();
     DateTime now = DateTime(epochTime);
     rtc.adjust(now);
+   
+  }
+  
+}
+
+void loop(void) {
+    // Kiểm tra trạng thái nút bấm
+    int reading = digitalRead(BUTTON_PIN);
+  if (reading == HIGH && (millis() - lastDebounceTime > debounceDelay)) {
+    lastDebounceTime = millis();
+    Serial.print("Mode: ");
+    mode = (mode + 1) % 2; // Chuyển đổi mode
+    Serial.println(mode);
+   
   }
 
-  DateTime now = rtc.now();
 
-  // Clear the top section before displaying date and time
-  clearSection(0, 0, tft.width(), tft.height() / 2);
 
-  // Display date and time in the top section of the screen
-  displayDateTime(now);
-
-  // Cập nhật nhiệt độ và độ ẩm
-  updateTemperatureHumidity();
-
-  // Chờ 10 giây trước khi cập nhật lại
-  delay(10000); // Update every 10 seconds
+    // Hiển thị màn hình ngày giờ hoặc nhiệt độ và độ ẩm
+    if (mode != recent_mode) {
+      Serial.print("Mode changed ");
+      recent_mode = mode;
+      
+      switch (mode) {
+        case 0:
+          displayDateTime.update(1);
+          lastDateTimeUpdate = millis();
+          break;
+        case 1:
+          displayTempHumidity.update(1);
+          lastTempHumidityUpdate = millis();
+          break;
+        case 3:
+          // Chỗ này có thể thêm mã cho màn hình khác nếu cần
+          break;
+      }
+    }
+    // Cập nhật màn hình ngày giờ mỗi 30 giây
+    if (mode == 0 && millis() - lastDateTimeUpdate >= dateTimeUpdateInterval) {
+      displayDateTime.update(0);
+      lastDateTimeUpdate = millis();
+    }
+  
+    // Cập nhật màn hình nhiệt độ và độ ẩm mỗi 60 giây
+    if (mode == 1 && millis() - lastTempHumidityUpdate >= tempHumidityUpdateInterval) {
+      displayTempHumidity.update(0);
+      lastTempHumidityUpdate = millis();
+    }
+  delay(10); // Cập nhật mỗi 100ms để giảm độ trễ khi nhấn nút
 }
 
 void backlighting(bool state) {
@@ -103,63 +173,4 @@ void backlighting(bool state) {
   } else {
     digitalWrite(TFT_LED, HIGH);
   }
-}
-
-void displayDateTime(DateTime lastDateTime) {
-  tft.setTextColor(ILI9341_WHITE);
-  tft.setTextSize(3);
-
-  // Display date and time in the top section of the screen
-  tft.setCursor(10, 10);
-  tft.print(lastDateTime.hour(), DEC);
-  tft.print(':');
-  tft.print(lastDateTime.minute(), DEC);
-
-  // Display the full date in the top section
-  tft.setTextSize(2);
-  tft.setCursor(10, 50);
-  tft.print(lastDateTime.day(), DEC);
-  tft.print('/');
-  tft.print(lastDateTime.month(), DEC);
-  tft.print('/');
-  tft.print(lastDateTime.year(), DEC);
-}
-
-void updateTemperatureHumidity() {
-  float newTemp = dht.readTemperature();
-  float newHumidity = dht.readHumidity();
-
-  // Kiểm tra xem dữ liệu mới có thay đổi không
-  if (newTemp != lastTemp || newHumidity != lastHumidity) {
-    // Cập nhật dữ liệu hiển thị nếu có thay đổi
-    lastTemp = newTemp;
-    lastHumidity = newHumidity;
-    displayTemperatureHumidity();
-  }
-}
-
-void displayTemperatureHumidity() {
-  tft.setTextColor(ILI9341_WHITE);
-  tft.setTextSize(3);
-
-  // Clear the bottom section before displaying temperature and humidity
-  clearSection(0, tft.height() / 2, tft.width(), tft.height() / 2);
-
-  // Display temperature on the left side of the bottom section
-  tft.setCursor(10, tft.height() / 2 + 10);
-  tft.print("Temp: ");
-  tft.setCursor(10, tft.height() / 2 + 40);
-  tft.print(lastTemp);
-  tft.print(" *C");
-
-  // Display humidity on the right side of the bottom section
-  tft.setCursor(tft.width() / 2 + 10, tft.height() / 2 + 10);
-  tft.print("Humidity: ");
-  tft.setCursor(tft.width() / 2 + 10, tft.height() / 2 + 40);
-  tft.print(lastHumidity);
-  tft.print(" %");
-}
-
-void clearSection(int x, int y, int width, int height){
-  tft.fillRect(x, y, width, height, ILI9341_BLACK);
 }
