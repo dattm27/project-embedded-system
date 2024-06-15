@@ -37,12 +37,13 @@ private:
 
     void displayTemperatureHumidity(float temp, float humidity) {
   
-         tft.fillScreen(ILI9341_BLACK); // Clear the screen
+         
         // Draw temperature icon (thermometer)
         drawThermometerIcon(20, 50, 50);
         // Draw temperature value
         tft.setTextColor(ILI9341_WHITE);
         tft.setTextSize(3);
+        tft.fillRect(100, 50, 100, 50, ILI9341_BLACK);
         tft.setCursor(100, 50);
         tft.print(temp);
         tft.print(" *C");
@@ -51,6 +52,7 @@ private:
         drawWaterDropletIcon(30, 150, 40);
         // Draw humidity value
         tft.setTextSize(3);
+        tft.fillRect(100, 150, 100, 50, ILI9341_BLACK);
         tft.setCursor(100, 150);
         tft.print(humidity);
         tft.print(" %");

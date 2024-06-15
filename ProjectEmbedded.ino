@@ -46,18 +46,25 @@ DisplayDateTime displayDateTime(tft, rtc);
 DisplayTemperatureHumidity displayTempHumidity(tft, dht);
 
 
+//Khởi tạo đối tượng Display AirQuality
+
+
 unsigned long lastDateTimeUpdate = 0;
 unsigned long lastTempHumidityUpdate = 0;
+unsigned long lastAirQualityUpdate = 0;
 const unsigned long switchInterval = 10000; // Chuyển đổi màn hình mỗi 10 giây
-const unsigned long dateTimeUpdateInterval = 30000; // Cập nhật thời gian mỗi 30 giây
-const unsigned long tempHumidityUpdateInterval = 60000; // Cập nhật nhiệt độ và độ ẩm mỗi 60 giây
- int mode = 0; // chế độ hiển thị
- int recent_mode = -1; // chế độ hiển thị hiện tại
+const unsigned long dateTimeUpdateInterval = 10000; // Cập nhật thời gian mỗi 10 giây
+const unsigned long tempHumidityUpdateInterval = 30000; // Cập nhật nhiệt độ và độ ẩm mỗi 60 giây
+const unsigned long airQualityUpdateInterval = 5000;
+int mode = 0; // chế độ hiển thị
+int recent_mode = -1; // chế độ hiển thị hiện tại
 #define BUTTON_PIN 12
+#define BUZZER_PIN 13
+#define MQ135_PIN 32
+
 //Chống nhảy phím
 unsigned long lastDebounceTime = 0;
 const unsigned long debounceDelay = 200;
-
 
 void setup() {
   Serial.begin(115200);
@@ -68,10 +75,13 @@ void setup() {
   pinMode(TFT_LED, OUTPUT);
   backlighting(true);
 
-  
   // Thiết lập chân nút bấm
   pinMode(BUTTON_PIN, INPUT);
-  
+
+  // Thiết lập chân buzzer
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW); // Tắt buzzer ban đầu
+
   if (!rtc.begin()) {
     Serial.println("Couldn't find RTC");
     while (1);
@@ -95,7 +105,6 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
-    
   }
   tft.fillScreen(ILI9341_BLACK);
   tft.setCursor(20, 100);
@@ -107,8 +116,7 @@ void setup() {
   delay(5000);
 
   // Khởi động NTPClient
-  timeClient.begin();
-
+  //timeClient.begin();
 
   // Cập nhật thời gian từ NTP
   if (WiFi.status() == WL_CONNECTED) {
@@ -116,55 +124,74 @@ void setup() {
     unsigned long epochTime = timeClient.getEpochTime();
     DateTime now = DateTime(epochTime);
     rtc.adjust(now);
-   
   }
-  
 }
 
 void loop(void) {
-    // Kiểm tra trạng thái nút bấm
-    int reading = digitalRead(BUTTON_PIN);
+  // Kiểm tra trạng thái nút bấm
+  int reading = digitalRead(BUTTON_PIN);
   if (reading == HIGH && (millis() - lastDebounceTime > debounceDelay)) {
     lastDebounceTime = millis();
     Serial.print("Mode: ");
-    mode = (mode + 1) % 2; // Chuyển đổi mode
+    mode = (mode + 1) % 3; // Chuyển đổi mode
     Serial.println(mode);
-   
+
+    // Buzzer kêu
+    digitalWrite(BUZZER_PIN, HIGH);
+    delay(100); // Kêu trong 100ms
+    digitalWrite(BUZZER_PIN, LOW);
   }
 
-
-
-    // Hiển thị màn hình ngày giờ hoặc nhiệt độ và độ ẩm
-    if (mode != recent_mode) {
-      Serial.print("Mode changed ");
-      recent_mode = mode;
-      
-      switch (mode) {
-        case 0:
-          displayDateTime.update(1);
-          lastDateTimeUpdate = millis();
-          break;
-        case 1:
-          displayTempHumidity.update(1);
-          lastTempHumidityUpdate = millis();
-          break;
-        case 3:
-          // Chỗ này có thể thêm mã cho màn hình khác nếu cần
-          break;
-      }
+  // Hiển thị màn hình ngày giờ hoặc nhiệt độ và độ ẩm
+  if (mode != recent_mode) {
+    Serial.print("Mode changed ");
+    recent_mode = mode;
+    tft.fillScreen(ILI9341_BLACK);
+    switch (mode) {
+      case 0:
+        displayDateTime.update(1);
+        lastDateTimeUpdate = millis();
+        break;
+      case 1:
+        displayTempHumidity.update(1);
+        lastTempHumidityUpdate = millis();
+        break;
+      case 2:
+        // Chỗ này có thể thêm mã cho màn hình khác nếu cần
+        
+        Serial.println(analogRead(MQ135_PIN));
+        break;
     }
-    // Cập nhật màn hình ngày giờ mỗi 30 giây
-    if (mode == 0 && millis() - lastDateTimeUpdate >= dateTimeUpdateInterval) {
-      displayDateTime.update(0);
-      lastDateTimeUpdate = millis();
-    }
+  }
+
+  // Cập nhật màn hình ngày giờ mỗi 10 giây
+  if (mode == 0 && millis() - lastDateTimeUpdate >= dateTimeUpdateInterval) {
+    displayDateTime.update(0);
+    lastDateTimeUpdate = millis();
+  }
+
+  // Cập nhật màn hình nhiệt độ và độ ẩm mỗi 60 giây
+  if (mode == 1 && millis() - lastTempHumidityUpdate >= tempHumidityUpdateInterval) {
+    displayTempHumidity.update(0);
+    lastTempHumidityUpdate = millis();
+
+  }
   
-    // Cập nhật màn hình nhiệt độ và độ ẩm mỗi 60 giây
-    if (mode == 1 && millis() - lastTempHumidityUpdate >= tempHumidityUpdateInterval) {
-      displayTempHumidity.update(0);
-      lastTempHumidityUpdate = millis();
+  if (mode == 2 && millis () - lastAirQualityUpdate >= airQualityUpdateInterval) {
+    Serial.print("smoke: ") ;
+    Serial.println(analogRead(MQ135_PIN));
+      if (analogRead(MQ135_PIN) > 3200){
+      digitalWrite(BUZZER_PIN, HIGH);
+      delay(100); // Kêu trong 100ms
+      digitalWrite(BUZZER_PIN, LOW);
+      tft.setCursor(20, 100);
+      tft.setTextColor(ILI9341_RED);
+      tft.println("GAS DETECTED...");
     }
+  }
+  
   delay(10); // Cập nhật mỗi 100ms để giảm độ trễ khi nhấn nút
+  
 }
 
 void backlighting(bool state) {
