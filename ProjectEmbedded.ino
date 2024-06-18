@@ -29,11 +29,17 @@ RTC_DS1307 rtc;
 const char *ssid     = "La Thuy";
 const char *password = "hoilamchi";
 
+const char* serverIP = "192.168.1.11";  // Địa chỉ IP của server
+const uint16_t serverPort = 8000;           // Cổng của server
+
 // Đặt múi giờ cho Hà Nội (GMT+7)
 const long utcOffsetInSeconds = 7 * 3600;
 
 // Khởi tạo UDP
 WiFiUDP ntpUDP;
+
+// Đối tượng WiFiClient để kết nối tới server
+WiFiClient client;
 
 // Khởi tạo NTPClient
 NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
@@ -180,14 +186,22 @@ void loop(void) {
   if (mode == 2 && millis () - lastAirQualityUpdate >= airQualityUpdateInterval) {
     Serial.print("smoke: ") ;
     Serial.println(analogRead(MQ135_PIN));
-      if (analogRead(MQ135_PIN) > 3200){
-      digitalWrite(BUZZER_PIN, HIGH);
-      delay(100); // Kêu trong 100ms
-      digitalWrite(BUZZER_PIN, LOW);
-      tft.setCursor(20, 100);
-      tft.setTextColor(ILI9341_RED);
-      tft.println("GAS DETECTED...");
+      if (analogRead(MQ135_PIN) > 3000){
+        digitalWrite(BUZZER_PIN, HIGH);
+        delay(100); // Kêu trong 100ms
+        digitalWrite(BUZZER_PIN, LOW);
+        tft.setCursor(20, 100);
+        tft.setTextColor(0xF800);
+        tft.println("GAS DETECTED...");
+
+        if (client.connect(serverIP, serverPort)) {
+           client.print("FIRE_DETECTED");
+           client.stop();
+        } else {
+            Serial.println("Failed to connect to server");
+        }
     }
+    lastAirQualityUpdate = millis();
   }
   
   delay(10); // Cập nhật mỗi 100ms để giảm độ trễ khi nhấn nút
