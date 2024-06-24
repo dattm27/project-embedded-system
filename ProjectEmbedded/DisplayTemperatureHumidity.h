@@ -17,12 +17,12 @@ public:
         float temp = dht.readTemperature();
         float humidity = dht.readHumidity();
 
-        if (!isnan(temp) && !isnan(humidity) && (temp != lastTemp || humidity != lastHumidity)) {
+        if (draw){
             displayTemperatureHumidity(temp, humidity);
             lastTemp = temp;
             lastHumidity = humidity;
         }
-        if (draw){
+        else if (!isnan(temp) && !isnan(humidity) && (temp != lastTemp || humidity != lastHumidity)) {
             displayTemperatureHumidity(temp, humidity);
             lastTemp = temp;
             lastHumidity = humidity;

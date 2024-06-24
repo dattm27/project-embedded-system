@@ -73,6 +73,7 @@ const unsigned long tempHumidityUpdateInterval = 10000; // Thời gian cập nh�
 const unsigned long airQualityUpdateInterval = 5000;
 int mode = 0; // chế độ hiển thị
 int recent_mode = -1; // chế độ hiển thị hiện tại
+int lastmode = 0;
 #define BUTTON_PIN 12
 #define BUZZER_PIN 13
 #define MQ135_PIN 32
@@ -150,6 +151,7 @@ void loop(void) {
     lastDebounceTime = millis();
     Serial.print("Mode: ");
     mode = (mode + 1) % 3; // Chuyển đổi mode
+    lastmode = mode;
     Serial.println(mode);
 
     // Buzzer kêu
@@ -199,15 +201,16 @@ void loop(void) {
   }
   
   if (true) {
-    
     //Serial.print("smoke: ") ;
     //lastAirQualityUpdate = millis();
     Serial.println(analogRead(MQ135_PIN));
       if (analogRead(MQ135_PIN) > 3000){
+        if (mode < 4) tft.fillScreen(ILI9341_BLACK);
+        if (mode < 4) lastmode = mode;
+        mode = 4;
         digitalWrite(BUZZER_PIN, HIGH);
         delay(100); // Kêu trong 100ms
         digitalWrite(BUZZER_PIN, LOW);
-        tft.fillScreen(ILI9341_BLACK);
         tft.setTextSize(3);
         tft.setTextColor( 0x001F);
         tft.setCursor(20, 100);
@@ -225,6 +228,7 @@ void loop(void) {
           }
         } 
     }
+    else mode = lastmode;
   }
   
   delay(10); // Cập nhật mỗi 10ms một lần

@@ -22,7 +22,7 @@ v1.0 - First release
 #endif
 
 /// The load resistance on the board
-#define RLOAD 10.0
+#define RLOAD 2.0
 /// The load resistance on the board
 #define RZERO_CO2 37.5
 #define RZERO_CO 2.7
@@ -31,8 +31,8 @@ v1.0 - First release
 #define PARA_CO2 116.6020682
 #define PARB_CO2 2.769034857
 /// Parameters for calculating ppm of CO from sensor resistance
-#define PARA_CO 605.18
-#define PARB_CO 3.937
+#define PARA_CO 374.471
+#define PARB_CO 3.425
 /// Parameters for calculating ppm of NH4 from sensor resistance
 #define PARA_NH4 102.2
 #define PARB_NH4 2.473
