@@ -44,4 +44,10 @@ Project objective: Develope a mulifunctional clock with indoor weather and air q
 <img src="" alt="Air Quality Screen" width="200"/>
 
 ### Gas Dectected Screen
-<img src="/Images/Gas_Dectected.jpg" alt="Air Quality Screen" width="200"/>
+<img src="/Images/Gas_Dectected.jpg" alt="Gas Dectected Screen" width="200"/>
+
+### Notify user by email
+<div style="display: flex;">
+    <img src="/Images/Email_1.jpg" alt="Email to notify user" width="200"/> 
+    <img src="/Images/Email_2.jpeg" alt="Email to notify user" width="200"/>
+</div>
