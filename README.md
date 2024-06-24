@@ -31,9 +31,17 @@ Project objective: Develope a mulifunctional clock with indoor weather and air q
 `./server`
 
 ## 4. Demo
+### Device
+<img src="/Images/Device.jpg" alt="Device" width="200"/>
 
-### The final product
+### Mode 0: Date Time Screen
+<img src="/Images/DateTimeScreen.jpg" alt="Date - Time Screen" width="200"/>
 
-![Product](./Images/Product.jpeg)
+### Mdoe 1: Temperature - Humidity Screen
+<img src="/Images/Temp_HumidityScreen.jpg" alt="Temperature - Humidity Screen" width="200"/>
 
-![Email](/Images/Email_2.jpeg)
+### Mdoe 2: Air Quality Screen
+<img src="" alt="Air Quality Screen" width="200"/>
+
+### Gas Dectected Screen
+<img src="/Images/Gas_Dectected.jpg" alt="Air Quality Screen" width="200"/>
