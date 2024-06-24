@@ -34,4 +34,6 @@ Project objective: Develope a mulifunctional clock with indoor weather and air q
 
 ### The final product
 
-![Product](./Images/Product.png)
+![Product](./Images/Product.jpeg)
+
+![Email](/Images/Email_2.jpeg)
