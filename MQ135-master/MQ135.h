@@ -31,8 +31,8 @@ v1.0 - First release
 #define PARA_CO2 116.6020682
 #define PARB_CO2 2.769034857
 /// Parameters for calculating ppm of CO from sensor resistance
-#define PARA_CO 374.471
-#define PARB_CO 3.425
+#define PARA_CO 1521.96
+#define PARB_CO 5.48425
 /// Parameters for calculating ppm of NH4 from sensor resistance
 #define PARA_NH4 102.2
 #define PARB_NH4 2.473

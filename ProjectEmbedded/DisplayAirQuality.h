@@ -9,49 +9,25 @@
 class DisplayAirQuality {
   public:
     DisplayAirQuality(Adafruit_ILI9341 &tft, DHT &dhtSensor, MQ135 &_mq135) 
-    : _tft(tft), dht(dhtSensor), mq135_sensor(_mq135), correctedPPM1(0) {}
+    : _tft(tft), dht(dhtSensor), mq135_sensor(_mq135), PPM1(0), PPM2(0) {}
 
     void update(bool draw) {
+        // khoi tao gia tri cho cac RZero
+        if (PPM1 == 0) update_RZERO();
 
-        if (correctedPPM1 < 350) update_RZERO();
+        // Lay PPM cua khi CO2
+        PPM1 = mq135_sensor.getPPM_CO2(RZero1);
+        // Lay PPM cua khi CO
+        PPM2 = mq135_sensor.getPPM_CO(RZero2);
+        // Hien thi PPM cua 2 khi
+        displayGasLevels(PPM1, PPM2);
+    }
 
-        temperature = dht.readTemperature(); // Assume current temperature. Recommended to measure with DHT22
-        humidity = dht.readHumidity(); // Assume current humidity. Recommended to measure with DHT22
-
-        correctedPPM1 = mq135_sensor.getCorrectedPPM_CO2(temperature, humidity, correctedRZero1);
-        correctedPPM2 = mq135_sensor.getCorrectedPPM_CO(temperature, humidity, correctedRZero2);
-        correctedPPM3 = mq135_sensor.getCorrectedPPM_NH4(temperature, humidity, correctedRZero3);
-
-        /*Serial.print("\t Temperature: ");
-        Serial.print(temperature);
-        Serial.println("'C");
-        Serial.print("\t Humidity: ");
-        Serial.println(humidity);
-        Serial.println("----------------------------");
-        Serial.print("\t Corrected RZero: ");
-        Serial.print(correctedRZero1);
-        Serial.print("\t Corrected PPM: ");
-        Serial.print(correctedPPM1);
-        Serial.println("ppm");
-        Serial.println("");
-
-        Serial.print("\t Corrected RZero: ");
-        Serial.print(correctedRZero2);
-        Serial.print("\t Corrected PPM: ");
-        Serial.print(correctedPPM2);
-        Serial.println("ppm");
-        Serial.println("");
-
-        Serial.print("\t Corrected RZero: ");
-        Serial.print(correctedRZero3);
-        Serial.print("\t Corrected PPM: ");
-        Serial.print(correctedPPM3);
-        Serial.println("ppm");
-        Serial.println("");
-
-        Serial.println("");*/
-
-        displayGasLevels(correctedPPM1, correctedPPM2, correctedPPM3);
+    float get_ppmCO2 () {
+      return this->mq135_sensor.getPPM_CO2(RZero1);
+    }
+    float get_ppmCO () {
+      return this->mq135_sensor.getPPM_CO(RZero2);
     }
 
   private:
@@ -59,28 +35,24 @@ class DisplayAirQuality {
     DHT &dht;
     MQ135 &mq135_sensor;
     
-    float correctedRZero1, correctedRZero2, correctedRZero3, temperature, humidity, correctedPPM1, correctedPPM2, correctedPPM3;
+    float RZero1, RZero2, PPM1, PPM2;
 
     void update_RZERO () {
-        temperature = dht.readTemperature(); // Assume current temperature. Recommended to measure with DHT22
-        humidity = dht.readHumidity(); // Assume current humidity. Recommended to measure with DHT22
         for (int i = 1; i <= 50; i++) {
-          this->correctedRZero1 += mq135_sensor.getCorrectedRZero_CO2(temperature, humidity);
-          this->correctedRZero2 += mq135_sensor.getCorrectedRZero_CO(temperature, humidity);
-          this->correctedRZero3 += mq135_sensor.getCorrectedRZero_NH4(temperature, humidity);
+          this->RZero1 += mq135_sensor.getRZero_CO2();
+          this->RZero2 += mq135_sensor.getRZero_CO();
         }
-        this->correctedRZero1 /= 50;
-        this->correctedRZero2 /= 50;
-        this->correctedRZero3 /= 50;
+        this->RZero1 /= 50;
+        this->RZero2 /= 50;
     }
 
-    void displayGasLevels(float CO2, float CO, float NH4) {
+    void displayGasLevels(float CO2, float CO) {
 
         _tft.fillRect(90, 100, 200, 200, ILI9341_BLACK);
         _tft.setTextSize(3);
         _tft.setTextColor(ILI9341_YELLOW);
         _tft.setCursor(0, 30);
-        _tft.println("   GAS DETECTOR");
+        _tft.println("   AIR QUALITY");
         _tft.setCursor(10, 70);
         _tft.println("      (PPM)");
         
@@ -92,17 +64,10 @@ class DisplayAirQuality {
        // _tft.println(" PPM");
 
         _tft.setCursor(10, 150);
-        _tft.print("NH4: ");
-        _tft.println(NH4);
-       // _tft.println(" PPM");
-
-        _tft.setCursor(10, 190);
         _tft.print("CO:  ");
         _tft.println(CO);
        // _tft.println(" PPM");
     }
-
-   
 };
 
 #endif

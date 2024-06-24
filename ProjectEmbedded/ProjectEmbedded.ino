@@ -9,6 +9,7 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
+#include <HTTPClient.h>
 #include "DisplayDateTime.h"
 #include "DisplayTemperatureHumidity.h"
 #include "DisplayAirQuality.h"
@@ -20,6 +21,8 @@
 #define TFT_RST  17
 #define TFT_MISO 19
 #define TFT_LED  4  
+// khai bao script cua sheet
+String Web_App_URL = "https://script.google.com/macros/s/AKfycbxnoM7BbjcdNzDdeqwD-qvrrSzlj5q2dw5qx0edAs6YpFsgdZRwV9fn6dv8249zsxdAZQ/exec";
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
 
@@ -67,9 +70,11 @@ unsigned long lastDateTimeUpdate = 0;
 unsigned long lastTempHumidityUpdate = 0;
 unsigned long lastAirQualityUpdate = 0;
 unsigned long lastMail = -60000*30;
+unsigned long lastUpdate = 0;
 const unsigned long switchInterval = 10000; // Chuyển đổi màn hình mỗi 10 giây
 const unsigned long dateTimeUpdateInterval = 10000; // Cập nhật thời gian mỗi 10 giây
 const unsigned long tempHumidityUpdateInterval = 10000; // Thời gian cập nhật nhiệt độ độ ẩm
+const unsigned long updateInterval = 30000;
 const unsigned long airQualityUpdateInterval = 5000;
 int mode = 0; // chế độ hiển thị
 int recent_mode = -1; // chế độ hiển thị hiện tại
@@ -81,6 +86,8 @@ int lastmode = 0;
 //Chống nhảy phím
 unsigned long lastDebounceTime = 0;
 const unsigned long debounceDelay = 200;
+
+String Status_Read_Sensor = "Success";
 
 void setup() {
   Serial.begin(115200);
@@ -158,6 +165,38 @@ void loop(void) {
     digitalWrite(BUZZER_PIN, HIGH);
     delay(100); // Kêu trong 100ms
     digitalWrite(BUZZER_PIN, LOW);
+  } 
+  if (millis() - lastUpdate >= updateInterval) {
+
+    lastUpdate = millis(); 
+    // lay cac tham so de dua len sheet
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
+    float ppm_CO2 = displayAirQuality.get_ppmCO2();
+    float ppm_CO = displayAirQuality.get_ppmCO();
+
+    String Send_Data_URL = Web_App_URL + "?sts=write";
+    // dinh kem cac tham so cho URL de cap nhat tren google sheet
+    Send_Data_URL += "&srs=" + Status_Read_Sensor;
+    Send_Data_URL += "&temp=" + String(t);
+    Send_Data_URL += "&humd=" + String(h);
+    Send_Data_URL += "&CO2=" + String(ppm_CO2);
+    Send_Data_URL += "&CO=" + String(ppm_CO);
+
+    Serial.println();
+    Serial.println("-------------");
+    Serial.println("Send data to Google Spreadsheet...");
+    Serial.print("URL : ");
+    Serial.println(Send_Data_URL);
+
+    // Khởi tạo HTTPClient
+    HTTPClient http;
+
+    // HTTP GET Request.
+    http.begin(Send_Data_URL.c_str());
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS); 
+    http.end();
+    //::::::::::::::::::
   }
 
   // Hiển thị màn hình ngày giờ hoặc nhiệt độ và độ ẩm
@@ -203,8 +242,11 @@ void loop(void) {
   if (true) {
     //Serial.print("smoke: ") ;
     //lastAirQualityUpdate = millis();
-    Serial.println(analogRead(MQ135_PIN));
-      if (analogRead(MQ135_PIN) > 3000){
+    float ppm_CO2 = displayAirQuality.get_ppmCO2();
+    float ppm_CO = displayAirQuality.get_ppmCO();
+    //Serial.println(ppm_CO2);
+    //Serial.println(ppm_CO);
+      if (ppm_CO2 > 1000 || ppm_CO > 9) {
         if (mode < 4) tft.fillScreen(ILI9341_BLACK);
         if (mode < 4) lastmode = mode;
         mode = 4;
@@ -219,7 +261,7 @@ void loop(void) {
 
         if (millis() - lastMail > 60000*30 ) {
          if( client.connect(serverIP, serverPort)){
-           client.print("FIRE_DETECTED");
+           client.print("GAS_DETECTED");
            lastMail = millis();
            client.stop();
          }
@@ -234,7 +276,6 @@ void loop(void) {
   delay(10); // Cập nhật mỗi 10ms một lần
   
 }
-
 
 void backlighting(bool state) {
   if (state) {
