@@ -17,7 +17,8 @@ Project objective: Develope a mulifunctional clock with indoor weather and air q
 - Programming language: C/C++.
 - Libraries Required: Adafruit GFX Library, DHT Sensor Libary, Adafruit ILI9431, TFT e_SPI, Wifi, NTCClient.
 ## 4. Implementation instructions
-2. Install Arduino and launch the IDE
+1. Clone this repository 
+2. Install Arduino and launch the project
 3. Install ESP32 Board Support (Arduino ESP32 Boards)
 3. Install Required Libraries
 4. Connect the hardware components to the ESP as the design. 
@@ -28,3 +29,9 @@ Project objective: Develope a mulifunctional clock with indoor weather and air q
     > Note: Replace your app password in EMAIL_PASSWORD before compiling.
 7. Start the server \
 `./server`
+
+## 4. Demo
+
+### The final product
+
+![Product](./Images/Product.png)
