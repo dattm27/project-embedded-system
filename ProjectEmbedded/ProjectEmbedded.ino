@@ -36,7 +36,7 @@ RTC_DS1307 rtc;
 const char *ssid     = "THANG_2G";
 const char *password = "0967240219";
 
-const char* serverIP = "192.168.1.6";  // Địa chỉ IP của server
+const char* serverIP = "192.168.1.2";  // Địa chỉ IP của server
 const uint16_t serverPort = 8000;           // Cổng của server
 
 // Đặt múi giờ cho Hà Nội (GMT+7)
@@ -66,10 +66,10 @@ DisplayAirQuality displayAirQuality(tft, dht, mq135_sensor);
 unsigned long lastDateTimeUpdate = 0;
 unsigned long lastTempHumidityUpdate = 0;
 unsigned long lastAirQualityUpdate = 0;
-unsigned long lastMail = 0;
+unsigned long lastMail = -60000*30;
 const unsigned long switchInterval = 10000; // Chuyển đổi màn hình mỗi 10 giây
 const unsigned long dateTimeUpdateInterval = 10000; // Cập nhật thời gian mỗi 10 giây
-const unsigned long tempHumidityUpdateInterval = 30000; // Cập nhật nhiệt độ và độ ẩm mỗi 60 giây
+const unsigned long tempHumidityUpdateInterval = 10000; // Thời gian cập nhật nhiệt độ độ ẩm
 const unsigned long airQualityUpdateInterval = 5000;
 int mode = 0; // chế độ hiển thị
 int recent_mode = -1; // chế độ hiển thị hiện tại
@@ -192,33 +192,45 @@ void loop(void) {
     lastTempHumidityUpdate = millis();
 
   }
-  
-  if (mode == 2 && millis () - lastAirQualityUpdate >= airQualityUpdateInterval / 2) {
+
+  if (mode == 2 && millis() - lastAirQualityUpdate >= airQualityUpdateInterval){
     displayAirQuality.update(0);
-    //Serial.print("smoke: ") ;
     lastAirQualityUpdate = millis();
+  }
+  
+  if (true) {
+    
+    //Serial.print("smoke: ") ;
+    //lastAirQualityUpdate = millis();
     Serial.println(analogRead(MQ135_PIN));
       if (analogRead(MQ135_PIN) > 3000){
         digitalWrite(BUZZER_PIN, HIGH);
         delay(100); // Kêu trong 100ms
         digitalWrite(BUZZER_PIN, LOW);
+        tft.fillScreen(ILI9341_BLACK);
+        tft.setTextSize(3);
+        tft.setTextColor( 0x001F);
         tft.setCursor(20, 100);
-        tft.setTextColor(0xF800);
+        
         tft.println("GAS DETECTED...");
 
-        if (client.connect(serverIP, serverPort)) {
+        if (millis() - lastMail > 60000*30 ) {
+         if( client.connect(serverIP, serverPort)){
            client.print("FIRE_DETECTED");
            lastMail = millis();
            client.stop();
-        } else {
+         }
+         else {
             Serial.println("Failed to connect to server");
-        }
+          }
+        } 
     }
   }
   
-  delay(10); // Cập nhật mỗi 100ms để giảm độ trễ khi nhấn nút
+  delay(10); // Cập nhật mỗi 10ms một lần
   
 }
+
 
 void backlighting(bool state) {
   if (state) {
