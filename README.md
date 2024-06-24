@@ -41,7 +41,7 @@ Project objective: Develope a mulifunctional clock with indoor weather and air q
 <img src="/Images/Temp_HumidityScreen.jpg" alt="Temperature - Humidity Screen" width="200"/>
 
 ### Mdoe 2: Air Quality Screen
-<img src="" alt="Air Quality Screen" width="200"/>
+<img src="/Images/AirQuality.jpg" alt="Air Quality Screen" width="200"/>
 
 ### Gas Dectected Screen
 <img src="/Images/Gas_Dectected.jpg" alt="Gas Dectected Screen" width="200"/>
