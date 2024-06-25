@@ -1,5 +1,3 @@
-
-
 #include <SPI.h>
 #include <MQ135.h>
 #include <Adafruit_GFX.h>
@@ -22,7 +20,7 @@
 #define TFT_MISO 19
 #define TFT_LED  4  
 // khai bao script cua sheet
-String Web_App_URL = "https://script.google.com/macros/s/AKfycbxnoM7BbjcdNzDdeqwD-qvrrSzlj5q2dw5qx0edAs6YpFsgdZRwV9fn6dv8249zsxdAZQ/exec";
+String Web_App_URL = "https://script.google.com/macros/s/AKfycbw-ZUc-ImTcnh2BJs3tarCLp6IZjrRtQ5MNsYA_QNRi_avJeU7mTJJujBQSQAmpBtcZ4g/exec";
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
 
@@ -36,10 +34,10 @@ MQ135 mq135_sensor(PIN_MQ135);
 RTC_DS1307 rtc;
 
 // Đặt thông tin WiFi của bạn
-const char *ssid     = "THANG_2G";
-const char *password = "0967240219";
+const char *ssid     = "iPhone của Sơn";
+const char *password = "20222022";
 
-const char* serverIP = "192.168.1.2";  // Địa chỉ IP của server
+const char* serverIP = "172.20.10.11";  // Địa chỉ IP của server
 const uint16_t serverPort = 8000;           // Cổng của server
 
 // Đặt múi giờ cho Hà Nội (GMT+7)
@@ -48,7 +46,7 @@ const long utcOffsetInSeconds = 7 * 3600;
 // Khởi tạo UDP
 WiFiUDP ntpUDP;
 
-// Đối tượng WiFiClient để kết nối tới server
+// Đối tượng WiFiClient để kết nối tới server -> gửi mail 
 WiFiClient client;
 
 // Khởi tạo NTPClient
@@ -195,7 +193,14 @@ void loop(void) {
     // HTTP GET Request.
     http.begin(Send_Data_URL.c_str());
     http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS); 
+    // Gets the HTTP status code.
+    int httpCode = http.GET(); 
+    Serial.print("HTTP Status Code : ");
+    Serial.println(httpCode);
+
+   
     http.end();
+    
     //::::::::::::::::::
   }
 
@@ -244,8 +249,8 @@ void loop(void) {
     //lastAirQualityUpdate = millis();
     float ppm_CO2 = displayAirQuality.get_ppmCO2();
     float ppm_CO = displayAirQuality.get_ppmCO();
-    //Serial.println(ppm_CO2);
-    //Serial.println(ppm_CO);
+   // Serial.println(ppm_CO2);
+   // Serial.println(ppm_CO);
       if (ppm_CO2 > 1000 || ppm_CO > 9) {
         if (mode < 4) tft.fillScreen(ILI9341_BLACK);
         if (mode < 4) lastmode = mode;
